@@ -2,18 +2,21 @@ package com.example.teachermanagement.controller;
 
 import com.example.teachermanagement.model.*;
 import com.example.teachermanagement.responses.TeacherListResponse;
-import com.example.teachermanagement.service.TeacherService;
+import com.example.teachermanagement.service.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -22,6 +25,18 @@ public class TeacherController {
 
     @Autowired
     private TeacherService teacherService;
+
+    @Autowired
+    private UpdateRequestService updateRequestService;
+
+    @Autowired
+    private TeachingScheduleService teachingScheduleService;
+
+    @Autowired
+    private AttendanceService attendanceService;
+
+    @Autowired
+    private LeaveRequestService leaveRequestService;
     @PostMapping("")
     public ResponseEntity<?> createProduct(
             @Valid @RequestBody Teacher teacher,
@@ -63,7 +78,7 @@ public class TeacherController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getTeacherById(
-            @PathVariable("id") Long teacherId
+            @PathVariable("id") long teacherId
     ) {
         try {
             Teacher existingTeacher = teacherService.getTeacherById(teacherId);
@@ -95,33 +110,61 @@ public class TeacherController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
+
     @PostMapping("/update-requests")
-    public ResponseEntity<UpdateRequest> submitUpdateRequest(@RequestBody UpdateRequest request) {
-        return ResponseEntity.ok(teacherService.submitUpdateRequest(request));
+    public UpdateRequest submitUpdateRequest(@RequestBody UpdateRequest request) {
+        request.setStatus("PENDING");
+        return updateRequestService.handeUpdateRequest(request);
     }
 
     @PostMapping("/leave-requests")
-    public ResponseEntity<LeaveRequest> submitLeaveRequest(@RequestBody LeaveRequest request) {
-        return ResponseEntity.ok(teacherService.submitLeaveRequest(request));
+    public LeaveRequest submitLeaveRequest(@RequestBody LeaveRequest request) {
+        request.setStatus("PENDING");
+        return leaveRequestService.createLeaveRequest(request);
     }
 
-    @GetMapping("/leave-requests/{teacherId}")
-    public ResponseEntity<List<LeaveRequest>> getLeaveRequests(@PathVariable Long teacherId) {
-        return ResponseEntity.ok(teacherService.getLeaveRequests(teacherId));
+    @GetMapping("/leave-requests")
+    public List<LeaveRequest> getLeaveRequests(@RequestParam long teacherId) {
+        return leaveRequestService.getLeaveRequestList(teacherId);
     }
 
-    @GetMapping("/schedules/{teacherId}")
-    public ResponseEntity<List<TeachingSchedule>> getTeachingSchedule(@PathVariable Long teacherId) {
-        return ResponseEntity.ok(teacherService.getTeachingSchedule(teacherId));
+    @GetMapping("/schedules")
+    public List<TeachingSchedule> getSchedules(@RequestParam long teacherId) {
+        return teachingScheduleService.getAllTeachingScheduleByTeacher(teacherId);
     }
 
-    @PostMapping("/attendance/{teacherId}/{type}")
-    public ResponseEntity<Attendance> logAttendance(@PathVariable Long teacherId, @PathVariable String type) {
-        return ResponseEntity.ok(teacherService.logAttendance(teacherId, type));
+    @PostMapping("/attendances/check-in")
+    public Attendance checkIn(@RequestParam long teacherId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) throws Exception {
+        Attendance attendance = attendanceService.findByTeacherIdAndDate(teacherId, date);
+        if (attendance == null) {
+            attendance = new Attendance();
+            attendance.setTeacher(teacherService.getTeacherById(teacherId));
+            attendance.setDate(date);
+            attendance.setCheckInTime(LocalTime.now());
+        } else if (attendance.getCheckInTime() != null) {
+            throw new RuntimeException("Already checked in");
+        } else {
+            attendance.setCheckInTime(LocalTime.now());
+        }
+        return attendanceService.handleSaveAttendance(attendance);
     }
 
-    @GetMapping("/attendance/{teacherId}")
-    public ResponseEntity<List<Attendance>> getAttendanceHistory(@PathVariable Long teacherId) {
-        return ResponseEntity.ok(teacherService.getAttendanceHistory(teacherId));
+    @PostMapping("/attendances/check-out")
+    public Attendance checkOut(@RequestParam long teacherId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        Attendance attendance = attendanceService.findByTeacherIdAndDate(teacherId, date);
+        if (attendance == null || attendance.getCheckInTime() == null) {
+            throw new RuntimeException("Must check in first");
+        }
+        if (attendance.getCheckOutTime() != null) {
+            throw new RuntimeException("Already checked out");
+        }
+        attendance.setCheckOutTime(LocalTime.now());
+        return attendanceService.handleSaveAttendance(attendance);
     }
+
+    @GetMapping("/attendances")
+    public List<Attendance> getAttendanceHistory(@RequestParam long teacherId) {
+        return attendanceService.findByTeacherId(teacherId);
+    }
+
 }

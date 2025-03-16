@@ -3,7 +3,7 @@ spring:
   datasource:
       url: jdbc:mysql://localhost:3307/teacher_management?useSSL=false&serverTimezone=UTC&createDatabaseIfNotExist=true
       username: root
-      password: thong123
+      password: 272004
       driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     show-sql: true

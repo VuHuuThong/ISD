@@ -67,36 +67,5 @@ public class TeacherService implements ITeacherService {
         return teacherRepository.findAll(pageRequest);
     }
 
-    public UpdateRequest submitUpdateRequest(UpdateRequest request) {
-        return updateRequestRepository.save(request);
-    }
 
-    public LeaveRequest submitLeaveRequest(LeaveRequest request) {
-        return leaveRequestRepository.save(request);
-    }
-
-    public List<LeaveRequest> getLeaveRequests(Long teacherId) {
-        return leaveRequestRepository.findByTeacherId(teacherId);
-    }
-
-    public List<TeachingSchedule> getTeachingSchedule(Long teacherId) {
-        return scheduleRepository.findByTeacherId(teacherId);
-    }
-    public Attendance logAttendance(Long teacherId, String type) {
-        Attendance attendance = new Attendance();
-        attendance.setTeacher(teacherRepository.getReferenceById(teacherId));
-        attendance.setDate(LocalDateTime.now().toString().substring(0, 10));
-        if ("check-in".equals(type)) {
-            attendance.setCheckInTime(LocalDateTime.now().toString());
-        } else if ("check-out".equals(type)) {
-            Attendance today = attendanceRepository.findByTeacherIdAndDate(teacherId, attendance.getDate());
-            today.setCheckOutTime(LocalDateTime.now().toString());
-            return attendanceRepository.save(today);
-        }
-        return attendanceRepository.save(attendance);
-    }
-
-    public List<Attendance> getAttendanceHistory(Long teacherId) {
-        return attendanceRepository.findByTeacherId(teacherId);
-    }
 }

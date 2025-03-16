@@ -3,6 +3,8 @@ package com.example.teachermanagement.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @Table(name = "TeachingSchedule")
@@ -14,6 +16,7 @@ public class TeachingSchedule {
     private Teacher teacher;
     private String subject;
     private String className;
-    private String timeSlot;
-    private String classroomLocation;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private String location;
 }
