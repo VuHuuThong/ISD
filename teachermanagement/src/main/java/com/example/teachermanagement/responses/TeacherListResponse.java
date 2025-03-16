@@ -1,6 +1,6 @@
 package com.example.teachermanagement.responses;
 
-import com.example.teachermanagement.model.TeacherEntity;
+import com.example.teachermanagement.model.Teacher;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +13,6 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 public class TeacherListResponse {
-    private List<TeacherEntity> teacherEntityList;
+    private List<Teacher> teacherList;
     private int totalPages;
 }
